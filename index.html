@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Electricity Plan Comparator</title>
   <style>
     :root {
@@ -15,9 +16,10 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: var(--background-color);
       padding: 2rem;
+      margin: 0;
     }
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
       background: var(--container-bg);
       padding: 2rem;
@@ -43,6 +45,7 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
+      width: 100%;
     }
     button {
       padding: 0.75rem;
@@ -54,20 +57,29 @@
       cursor: pointer;
       margin-top: 0.5rem;
       transition: background 0.2s ease;
+      width: 48%;
     }
     button:hover {
       background: #0056b3;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
     .result, .history {
       margin-top: 2rem;
       padding: 1rem;
       background: var(--accent-color);
       border-radius: 8px;
+      overflow-x: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
+      min-width: 600px;
     }
     th, td {
       border: 1px solid #dee2e6;
@@ -82,6 +94,21 @@
       margin-top: 1rem;
       font-size: 0.95em;
       color: var(--text-muted);
+    }
+    .previous-values {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+    }
+    .previous-values span {
+      display: block;
+      margin-bottom: 5px;
+    }
+    @media screen and (max-width: 600px) {
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -101,11 +128,19 @@
     <label for="p2_rate">Rate per kWh ($):</label>
     <input type="number" id="p2_rate" step="0.0001" placeholder="e.g., 0.2841">
 
+    <div class="previous-values" id="previousValues">
+      <strong>Last Used Values:</strong>
+      <span id="prevPlan1"></span>
+      <span id="prevPlan2"></span>
+    </div>
+
     <h4>Monthly Usage:</h4>
     <label for="usage">Usage (kWh):</label>
     <input type="number" id="usage" placeholder="Enter usage in kWh">
-    <button onclick="addUsage()">➕ Add Usage</button>
-    <button onclick="clearHistory()">🧹 Clear All</button>
+    <div class="button-group">
+      <button onclick="addUsage()">➕ Add Usage</button>
+      <button onclick="clearHistory()">🧹 Clear All</button>
+    </div>
 
     <div class="history" id="history">
       <strong>📊 Comparison History:</strong>
@@ -117,6 +152,7 @@
             <th>Plan 1 Cost ($)</th>
             <th>Plan 2 Cost ($)</th>
             <th>Cheaper Plan</th>
+            <th>Savings ($)</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -124,7 +160,7 @@
     </div>
 
     <div class="result" id="result">Enter plan details and usage to begin comparison.</div>
-    <div class="note">
+    <div class="note" id="note">
       • Break-even usage depends on your plan values.<br>
       • Customize charges and rates to see real savings.<br>
       • Try multiple usage values to explore different scenarios.
@@ -150,8 +186,10 @@
       const plan2 = (p2_daily * 30) + (p2_rate * usage);
 
       let cheaper = '';
+      let savings = Math.abs(plan1 - plan2).toFixed(2);
       if (Math.abs(plan1 - plan2) < 0.01) {
         cheaper = "Both same";
+        savings = "0.00";
       } else if (plan1 < plan2) {
         cheaper = "Plan 1";
       } else {
@@ -165,6 +203,7 @@
         <td>${plan1.toFixed(2)}</td>
         <td>${plan2.toFixed(2)}</td>
         <td>${cheaper}</td>
+        <td>${savings}</td>
       </tr>`;
 
       document.querySelector('#usageTable tbody').insertAdjacentHTML('beforeend', row);
@@ -172,7 +211,19 @@
       document.getElementById('result').innerText = `📌 For ${usage} kWh:
 Plan 1: $${plan1.toFixed(2)}
 Plan 2: $${plan2.toFixed(2)}
-✅ Cheaper: ${cheaper}`;
+✅ Cheaper: ${cheaper} by $${savings}`;
+
+      // Show previous values
+      document.getElementById('prevPlan1').innerText = `Plan 1 → Daily: $${p1_daily.toFixed(4)}, Rate: $${p1_rate.toFixed(4)}`;
+      document.getElementById('prevPlan2').innerText = `Plan 2 → Daily: $${p2_daily.toFixed(4)}, Rate: $${p2_rate.toFixed(4)}`;
+
+      // Calculate and show break-even point
+      const breakEven = (30 * (p1_daily - p2_daily)) / (p2_rate - p1_rate);
+      if (!isNaN(breakEven) && breakEven >= 0) {
+        document.getElementById('note').innerHTML = `• Break-even usage ≈ <strong>${breakEven.toFixed(1)} kWh</strong><br>
+        • Plan 1: Higher daily, lower usage rate<br>
+        • Plan 2: Lower daily, higher usage rate`;
+      }
 
       document.getElementById('usage').value = '';
     }
@@ -181,6 +232,11 @@ Plan 2: $${plan2.toFixed(2)}
       document.querySelector('#usageTable tbody').innerHTML = '';
       count = 0;
       document.getElementById('result').innerText = '🧾 History cleared. Enter new values to compare again.';
+      document.getElementById('note').innerHTML = `• Break-even usage depends on your plan values.<br>
+      • Customize charges and rates to see real savings.<br>
+      • Try multiple usage values to explore different scenarios.`;
+      document.getElementById('prevPlan1').innerText = '';
+      document.getElementById('prevPlan2').innerText = '';
     }
   </script>
 </body>
