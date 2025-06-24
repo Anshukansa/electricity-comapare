@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Electricity Plan Comparator</title>
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --background-color: #f4f4f4;
+      --container-bg: #ffffff;
+      --accent-color: #e9ecef;
+      --text-muted: #6c757d;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background-color);
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: var(--container-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    h4 {
+      margin-top: 1.5rem;
+      color: var(--primary-color);
+    }
+    label {
+      margin-top: 0.5rem;
+      font-weight: bold;
+    }
+    input {
+      padding: 0.6rem;
+      margin-top: 0.2rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.75rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result, .history {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: var(--accent-color);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f1f3f5;
+      font-weight: bold;
+    }
+    .note {
+      margin-top: 1rem;
+      font-size: 0.95em;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔌 Electricity Plan Comparator</h2>
+
+    <h4>Plan 1 Details:</h4>
+    <label for="p1_daily">Daily Charge ($):</label>
+    <input type="number" id="p1_daily" step="0.0001" placeholder="e.g., 0.83259">
+    <label for="p1_rate">Rate per kWh ($):</label>
+    <input type="number" id="p1_rate" step="0.0001" placeholder="e.g., 0.21912">
+
+    <h4>Plan 2 Details:</h4>
+    <label for="p2_daily">Daily Charge ($):</label>
+    <input type="number" id="p2_daily" step="0.0001" placeholder="e.g., 0.4326">
+    <label for="p2_rate">Rate per kWh ($):</label>
+    <input type="number" id="p2_rate" step="0.0001" placeholder="e.g., 0.2841">
+
+    <h4>Monthly Usage:</h4>
+    <label for="usage">Usage (kWh):</label>
+    <input type="number" id="usage" placeholder="Enter usage in kWh">
+    <button onclick="addUsage()">➕ Add Usage</button>
+    <button onclick="clearHistory()">🧹 Clear All</button>
+
+    <div class="history" id="history">
+      <strong>📊 Comparison History:</strong>
+      <table id="usageTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Usage (kWh)</th>
+            <th>Plan 1 Cost ($)</th>
+            <th>Plan 2 Cost ($)</th>
+            <th>Cheaper Plan</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="result" id="result">Enter plan details and usage to begin comparison.</div>
+    <div class="note">
+      • Break-even usage depends on your plan values.<br>
+      • Customize charges and rates to see real savings.<br>
+      • Try multiple usage values to explore different scenarios.
+    </div>
+  </div>
+
+  <script>
+    let count = 0;
+
+    function addUsage() {
+      const usage = parseFloat(document.getElementById('usage').value);
+      const p1_daily = parseFloat(document.getElementById('p1_daily').value);
+      const p1_rate = parseFloat(document.getElementById('p1_rate').value);
+      const p2_daily = parseFloat(document.getElementById('p2_daily').value);
+      const p2_rate = parseFloat(document.getElementById('p2_rate').value);
+
+      if ([usage, p1_daily, p1_rate, p2_daily, p2_rate].some(v => isNaN(v) || v < 0)) {
+        document.getElementById('result').innerText = '❗ Please enter valid non-negative numbers for all fields.';
+        return;
+      }
+
+      const plan1 = (p1_daily * 30) + (p1_rate * usage);
+      const plan2 = (p2_daily * 30) + (p2_rate * usage);
+
+      let cheaper = '';
+      if (Math.abs(plan1 - plan2) < 0.01) {
+        cheaper = "Both same";
+      } else if (plan1 < plan2) {
+        cheaper = "Plan 1";
+      } else {
+        cheaper = "Plan 2";
+      }
+
+      count++;
+      const row = `<tr>
+        <td>${count}</td>
+        <td>${usage}</td>
+        <td>${plan1.toFixed(2)}</td>
+        <td>${plan2.toFixed(2)}</td>
+        <td>${cheaper}</td>
+      </tr>`;
+
+      document.querySelector('#usageTable tbody').insertAdjacentHTML('beforeend', row);
+
+      document.getElementById('result').innerText = `📌 For ${usage} kWh:
+Plan 1: $${plan1.toFixed(2)}
+Plan 2: $${plan2.toFixed(2)}
+✅ Cheaper: ${cheaper}`;
+
+      document.getElementById('usage').value = '';
+    }
+
+    function clearHistory() {
+      document.querySelector('#usageTable tbody').innerHTML = '';
+      count = 0;
+      document.getElementById('result').innerText = '🧾 History cleared. Enter new values to compare again.';
+    }
+  </script>
+</body>
+</html>
